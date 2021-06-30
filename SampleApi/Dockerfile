@@ -1,21 +1,13 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
-WORKDIR /app
-EXPOSE 80
-
-FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
+FROM mcr.microsoft.com/dotnet/sdk:3.1 AS builder
 WORKDIR /src
-COPY ["SampleApi/SampleApi.csproj", "SampleApi/"]
-RUN dotnet restore "SampleApi/SampleApi.csproj"
+COPY ./SampleApi.csproj .
+RUN dotnet restore SampleApi.csproj
 COPY . .
-WORKDIR "/src/SampleApi"
-RUN dotnet build "SampleApi.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "SampleApi.csproj" -c Release -o /app/publish
-
-FROM base AS final
+RUN dotnet build SampleApi.csproj -c Debug -o /src/out
+# using ASP.NET Core SDK to run the image inside the container
+FROM mcr.microsoft.com/dotnet/aspnet:3.1
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SampleApi.dll"]
+COPY --from=builder /src/out .
+
+EXPOSE 80
+ENTRYPOINT [ "dotnet", "SampleApi.dll"]
